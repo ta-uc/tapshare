@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+  <title>TapShare</title>
+  <style type="text/css">
+    body {
+      margin: 0;
+      -webkit-touch-callout:none;
+      -webkit-user-select:none;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas">
+  Unsupported Browser
+  </canvas>
+</body>
+<script src="https://code.jquery.com/jquery-1.8.2.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
+<script>
+  $(function(){
+    alert('画面内をタッチ（ドラッグ）するとページを見てる他の人の画面にも表示されます。\n ※iosの場合iosデバイスのみに送信されます。');
+    var id = navigator.platform + Math.random();
+    var w = document.documentElement.clientWidth;
+    var h = document.documentElement.clientHeight;
+    var colorNumber = 0;
+    var color=['Red','Orange','Yellow','YellowGreen','DodgerBlue','Blue','DarkMagenta'];
+    var canvas = document.getElementById('canvas');
+    var ctx =  canvas.getContext('2d');
+    var px = 0;
+    var py = 0;
+    var ppx = 0;
+    var ppy = 0;
+    $('#canvas').get(0).width = w;
+    $('#canvas').get(0).height = h;
+    var host = window.location.hostname
+    var socket = io.connect('https://'+host+'/');
+    function onMousedown(e){
+      var x = e.clientX;
+      var y = e.clientY;
+      send(x,y);
+    }
+    function onMousemove(e){
+      if (e.buttons === 1) {
+        var x = e.clientX;
+        var y = e.clientY;
+        send(x,y);
+      }
+    }
+    function onTouch(e){
+      e.preventDefault();
+      var x = e.changedTouches[0].clientX;
+      var y = e.changedTouches[0].clientY;
+      send(x,y);
+    }
+    socket.on('json', function(msg) {
+      if (msg['id'] != id) {
+        var dx = w * msg['px'];
+        var dy = h * msg['py'];
+        drow(dx,dy);
+      }
+    });
+    canvas.addEventListener('mousemove',onMousemove,false);
+    canvas.addEventListener('mousedown',onMousedown,false);
+    canvas.addEventListener('touchstart', onTouch, false);
+    canvas.addEventListener('touchmove', onTouch, false);
+    function drow(x,y){
+      ctx.globalAlpha = 0.95;
+      ctx.fillStyle = color[colorNumber%7];
+      ctx.strokeStyle = color[colorNumber%7];
+      ctx.beginPath();
+      ctx.arc(x, y, 10, 0, Math.PI*2, true);
+      ctx.stroke();
+      ctx.fill();
+      ctx.globalAlpha = 0.5;
+      ctx.fillStyle = "white";
+      ctx.fillRect(0,0,w,h);
+      colorNumber++;
+    }
+    function send(x,y){
+      var dist = 0;
+      px = x / w;
+      py = y / h;
+      dist = Math.sqrt(Math.pow((px - ppx),2) + Math.pow((py - ppy),2));
+        if (dist >= 0.1) {
+          ppx = px;
+          ppy = py;
+          var message = {
+              "px" : px,
+              "py" : py,
+              "id" : id
+            };
+          socket.emit('json', message);
+          drow(x,y);
+        }
+    }
+  });
+</script>
+</html>

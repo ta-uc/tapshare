@@ -1,0 +1,6 @@
+Flask==0.12
+gunicorn==19.7.1
+Flask-SocketIO==2.9.0
+gevent==1.2.2
+gevent-websocket==0.10.1
+greenlet==0.4.12
